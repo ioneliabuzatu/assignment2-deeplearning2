@@ -1,0 +1,14 @@
+git+https://git@github.com/ministry-of-silly-code/experiment_buddy.git#egg=experiment_buddy
+matplotlib
+wandb
+h5py
+numpy
+opencv-python
+Pillow
+scipy
+tensorboard
+tqdm
+array2gif
+sortedcontainers
+sklearn
+ipywidgets
