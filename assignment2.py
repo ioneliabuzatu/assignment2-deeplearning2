@@ -17,7 +17,7 @@ wandb.run = config.tensorboard.run
 
 
 @torch.no_grad()
-def evaluate(network: nn.Module, data: DataLoader, metric: callable, cuda=True) -> list:
+def evaluate(network: nn.Module, data: DataLoader, metric: callable, cuda=False) -> list:
     network.eval()
 
     errors = []
@@ -38,7 +38,7 @@ def evaluate(network: nn.Module, data: DataLoader, metric: callable, cuda=True) 
 
 
 @torch.enable_grad()
-def update(network: nn.Module, data: DataLoader, loss: nn.Module, opt: optim.Optimizer, cuda=True) -> list:
+def update(network: nn.Module, data: DataLoader, loss: nn.Module, opt: optim.Optimizer, cuda=False) -> list:
     network.train()
 
     errors = []
@@ -102,7 +102,7 @@ def freeze_pretrained_convolution_weights(model):
 
 
 vgg13_model = vgg13(pretrained=True)
-vgg13_model.to("cuda")
+# vgg13_model.to("cuda")
 network = CifarVGG(vgg13_model.features, num_classes=10)
 
 freeze_pretrained_convolution_weights(network)
@@ -129,7 +129,7 @@ train_dataloader = DataLoader(train_dataset, batch_size)
 validation_dataloader = DataLoader(validation_dataset, batch_size)
 test_dataloader = DataLoader(cifar10_test_data, batch_size)
 
-network = network.to("cuda")
+# network = network.to("cuda")
 
 # optimiser + loss function
 sgd = optim.SGD(network.parameters(), lr=config.lr, momentum=config.momentum)
@@ -142,10 +142,9 @@ for epoch_idx in trange(20):
     train_errs.append(sum(local_errs) / len(local_errs))
     validation_error_epoch = evaluate(network, validation_dataloader, criterium)
     valid_errs.append(sum(validation_error_epoch) / len(validation_error_epoch))
-    wandb.log({"val_loss": sum(validation_error_epoch) / len(validation_error_epoch)}, step=int(epoch_idx))
+    wandb.log({"val_loss": float(sum(validation_error_epoch) / len(validation_error_epoch))}, step=int(epoch_idx))
 
 
-# plot learning curves
 # from matplotlib import pyplot as plt
 #
 # plt.plot(train_errs, label="train")
@@ -153,8 +152,6 @@ for epoch_idx in trange(20):
 # plt.legend()
 # plt.show()
 
-
-# print(f"ran on {next(network.parameters().device)}")
 
 @torch.no_grad()
 def accuracy(logits, targets):
@@ -185,14 +182,25 @@ def accuracy(logits, targets):
     return accuracy_samples
 
 
-network.eval()
-test_accuracy = []
-for batch_idx, (inputs, targets) in enumerate(test_dataloader):
-    inputs = inputs.to("cuda")
-    targets = targets.to("cuda")
+@torch.no_grad()
+def get_accuracy(model, dataloader):
+    network.eval()
+    accuracies_batches = []
+    for batch_idx, (inputs, targets) in enumerate(dataloader):
+        # inputs = inputs.to("cuda")
+        # targets = targets.to("cuda")
 
-    logits = network(inputs)
-    test_accuracy_mini_batch = accuracy(logits, targets)
-    test_accuracy.append(test_accuracy_mini_batch)
+        logits = model(inputs)
+        accuracy_mini_batch = accuracy(logits, targets)
+        accuracies_batches.append(accuracy_mini_batch)
 
-print(sum(test_accuracy) / len(test_accuracy))
+    return sum(accuracies_batches) / len(accuracies_batches)
+
+
+test_accuracy = get_accuracy(network, test_dataloader)
+train_accuracy = get_accuracy(network, train_dataloader)
+validation_accuracy = get_accuracy(network, validation_dataloader)
+
+print(f"Test Accuracy: {test_accuracy}")
+print(f"Train Accuracy: {train_accuracy}")
+print(f"Validation Accuracy {validation_accuracy}")

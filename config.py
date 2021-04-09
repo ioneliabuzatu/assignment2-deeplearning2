@@ -1,3 +1,5 @@
+import torch
+
 import experiment_buddy
 
 batch_size = 32
