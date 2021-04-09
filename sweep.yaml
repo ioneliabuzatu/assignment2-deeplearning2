@@ -1,0 +1,18 @@
+method: random
+metric:
+  goal: minimize
+  name: validation_loss
+parameters:
+  ^batch_size:
+    distribution: q_uniform
+    min: 32
+    max: 64
+  ^lr:
+    distribution: uniform
+    min: 0.000001
+    max: 0.01
+  ^momentum:
+    distribution: uniform
+    min: 0.9
+    max: o.999
+program: assignment2.py
