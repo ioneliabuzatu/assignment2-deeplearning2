@@ -142,10 +142,9 @@ for epoch_idx in trange(20):
     train_errs.append(sum(local_errs) / len(local_errs))
     validation_error_epoch = evaluate(network, validation_dataloader, criterium)
     valid_errs.append(sum(validation_error_epoch) / len(validation_error_epoch))
-    wandb.log({"val_loss": sum(validation_error_epoch) / len(validation_error_epoch)}, step=int(epoch_idx))
+    wandb.log({"val_loss": float(sum(validation_error_epoch) / len(validation_error_epoch))}, step=int(epoch_idx))
 
 
-# plot learning curves
 # from matplotlib import pyplot as plt
 #
 # plt.plot(train_errs, label="train")
@@ -153,8 +152,6 @@ for epoch_idx in trange(20):
 # plt.legend()
 # plt.show()
 
-
-# print(f"ran on {next(network.parameters().device)}")
 
 @torch.no_grad()
 def accuracy(logits, targets):
@@ -185,14 +182,18 @@ def accuracy(logits, targets):
     return accuracy_samples
 
 
-network.eval()
-test_accuracy = []
-for batch_idx, (inputs, targets) in enumerate(test_dataloader):
-    inputs = inputs.to("cuda")
-    targets = targets.to("cuda")
+@torch.no_grad()
+def get_accuracy(model, dataloader):
+    network.eval()
+    accuracies_batches = []
+    for batch_idx, (inputs, targets) in enumerate(dataloader):
+        inputs = inputs.to("cuda")
+        targets = targets.to("cuda")
 
-    logits = network(inputs)
-    test_accuracy_mini_batch = accuracy(logits, targets)
-    test_accuracy.append(test_accuracy_mini_batch)
+        logits = model(inputs)
+        accuracy_mini_batch = accuracy(logits, targets)
+        accuracies_batches.append(accuracy_mini_batch)
 
-print(sum(test_accuracy) / len(test_accuracy))
+    return sum(accuracies_batches) / len(accuracies_batches)
+
+
